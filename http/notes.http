@@ -1,0 +1,37 @@
+### CREATE - add a note
+POST http://localhost:8081/api/notes
+Authorization: Basic YWRtaW46YWRtaW4xMjM=
+Content-Type: application/json
+
+{
+  "title": "First note",
+  "content": "Hello from HTTP client"
+}
+
+> {% client.global.set("noteId", response.body.id); %}
+
+### READ ALL - list notes
+GET http://localhost:8081/api/notes
+Authorization: Basic YWRtaW46YWRtaW4xMjM=
+
+### READ ONE - get note by id
+GET http://localhost:8081/api/notes/{{noteId}}
+Authorization: Basic YWRtaW46YWRtaW4xMjM=
+
+### UPDATE - replace note fields
+PUT http://localhost:8081/api/notes/{{noteId}}
+Authorization: Basic YWRtaW46YWRtaW4xMjM=
+Content-Type: application/json
+
+{
+  "title": "First note (edited)",
+  "content": "Changed content"
+}
+
+### DELETE - remove note
+DELETE http://localhost:8081/api/notes/{{noteId}}
+Authorization: Basic YWRtaW46YWRtaW4xMjM=
+
+### READ ONE after delete - expect 404
+GET http://localhost:8081/api/notes/{{noteId}}
+Authorization: Basic YWRtaW46YWRtaW4xMjM=

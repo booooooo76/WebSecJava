@@ -1,0 +1,58 @@
+### Basic auth: admin / admin123  ->  Authorization: Basic YWRtaW46YWRtaW4xMjM=
+
+### 1. CREATE with valid credentials - expect 201
+POST http://localhost:8081/api/notes
+Authorization: Basic YWRtaW46YWRtaW4xMjM=
+Content-Type: application/json
+
+{
+  "title": "Secured note",
+  "content": "Created with Basic auth"
+}
+
+> {% client.global.set("noteId", response.body.id); %}
+
+### 2. READ ALL with valid credentials - expect 200
+GET http://localhost:8081/api/notes
+Authorization: Basic YWRtaW46YWRtaW4xMjM=
+
+### 3. READ ONE with valid credentials - expect 200
+GET http://localhost:8081/api/notes/{{noteId}}
+Authorization: Basic YWRtaW46YWRtaW4xMjM=
+
+### 4. UPDATE with valid credentials - expect 200
+PUT http://localhost:8081/api/notes/{{noteId}}
+Authorization: Basic YWRtaW46YWRtaW4xMjM=
+Content-Type: application/json
+
+{
+  "title": "Secured note (edited)",
+  "content": "Updated with Basic auth"
+}
+
+### 5. DELETE with valid credentials - expect 204
+DELETE http://localhost:8081/api/notes/{{noteId}}
+Authorization: Basic YWRtaW46YWRtaW4xMjM=
+
+### 6. READ deleted note with valid credentials - expect 404
+GET http://localhost:8081/api/notes/{{noteId}}
+Authorization: Basic YWRtaW46YWRtaW4xMjM=
+
+### 7. READ ALL without credentials - expect 401
+GET http://localhost:8081/api/notes
+
+### 8. CREATE without credentials - expect 401
+POST http://localhost:8081/api/notes
+Content-Type: application/json
+
+{
+  "title": "Should be rejected",
+  "content": "No Authorization header"
+}
+
+### 9. READ ALL with wrong password - expect 401
+GET http://localhost:8081/api/notes
+Authorization: Basic YWRtaW46d3JvbmdwYXNz
+
+### 10. DELETE without credentials - expect 401
+DELETE http://localhost:8081/api/notes/1

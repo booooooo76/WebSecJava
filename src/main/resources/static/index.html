@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Web Security - Task 2</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 60px auto; }
+        input, button { font-size: 1rem; padding: 6px; }
+        #result, #time { margin-top: 12px; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+        .row-input { width: 90%; }
+    </style>
+</head>
+<body>
+<h1>Simple Web Application</h1>
+
+<section>
+    <h2>Greeting</h2>
+    <input id="nameInput" type="text" placeholder="Your name">
+    <button onclick="greet()">Say hello</button>
+    <p id="result"></p>
+</section>
+
+<section>
+    <h2>Server time</h2>
+    <button onclick="showTime()">Get server time</button>
+    <p id="time"></p>
+</section>
+
+<section>
+    <h2>Notes (CRUD)</h2>
+    <input id="noteTitle" type="text" placeholder="Title">
+    <input id="noteContent" type="text" placeholder="Content">
+    <button onclick="createNote()">Add note</button>
+
+    <table id="notesTable">
+        <thead>
+        <tr><th>ID</th><th>Title</th><th>Content</th><th>Actions</th></tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</section>
+
+<script>
+    async function greet() {
+        const name = document.getElementById('nameInput').value;
+        const res = await fetch('/api/greet?name=' + encodeURIComponent(name));
+        document.getElementById('result').textContent = await res.text();
+    }
+
+    async function showTime() {
+        const res = await fetch('/api/time');
+        document.getElementById('time').textContent = await res.text();
+    }
+
+    async function loadNotes() {
+        const res = await fetch('/api/notes');
+        const notes = await res.json();
+        const tbody = document.querySelector('#notesTable tbody');
+        tbody.innerHTML = '';
+        for (const note of notes) {
+            const tr = document.createElement('tr');
+
+            const titleInput = document.createElement('input');
+            titleInput.className = 'row-input';
+            titleInput.value = note.title;
+
+            const contentInput = document.createElement('input');
+            contentInput.className = 'row-input';
+            contentInput.value = note.content;
+
+            const idTd = document.createElement('td');
+            idTd.textContent = note.id;
+
+            const titleTd = document.createElement('td');
+            titleTd.appendChild(titleInput);
+
+            const contentTd = document.createElement('td');
+            contentTd.appendChild(contentInput);
+
+            const actionsTd = document.createElement('td');
+
+            const saveBtn = document.createElement('button');
+            saveBtn.textContent = 'Save';
+            saveBtn.onclick = () => updateNote(note.id, titleInput.value, contentInput.value);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.onclick = () => deleteNote(note.id);
+
+            actionsTd.appendChild(saveBtn);
+            actionsTd.appendChild(deleteBtn);
+
+            tr.appendChild(idTd);
+            tr.appendChild(titleTd);
+            tr.appendChild(contentTd);
+            tr.appendChild(actionsTd);
+            tbody.appendChild(tr);
+        }
+    }
+
+    async function createNote() {
+        const title = document.getElementById('noteTitle').value;
+        const content = document.getElementById('noteContent').value;
+        await fetch('/api/notes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, content })
+        });
+        document.getElementById('noteTitle').value = '';
+        document.getElementById('noteContent').value = '';
+        await loadNotes();
+    }
+
+    async function updateNote(id, title, content) {
+        await fetch('/api/notes/' + id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, content })
+        });
+        await loadNotes();
+    }
+
+    async function deleteNote(id) {
+        await fetch('/api/notes/' + id, { method: 'DELETE' });
+        await loadNotes();
+    }
+
+    loadNotes();
+</script>
+</body>
+</html>

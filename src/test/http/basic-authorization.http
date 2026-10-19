@@ -1,0 +1,123 @@
+### 1. CREATE with valid credentials - Happy Pass, expect 201
+POST http://localhost:8081/api/notes
+Authorization: Basic admin admin123
+Content-Type: application/json
+Accept: application/json
+
+{
+  "title": "Secured note",
+  "content": "Created with Basic auth"
+}
+
+> {%
+    client.test("CREATE returns 201", function () {
+        client.assert(response.status === 201, "Expected 201 but got " + response.status);
+    });
+    client.global.set("noteId", response.body.id);
+%}
+
+### 2. READ ALL with valid credentials - Happy Pass, expect 200
+GET http://localhost:8081/api/notes
+Authorization: Basic admin admin123
+Accept: application/json
+
+> {%
+    client.test("READ ALL returns 200", function () {
+        client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    });
+%}
+
+### 3. READ ONE with valid credentials - Happy Pass, expect 200
+GET http://localhost:8081/api/notes/{{noteId}}
+Authorization: Basic admin admin123
+Accept: application/json
+
+> {%
+    client.test("READ ONE returns 200", function () {
+        client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    });
+%}
+
+### 4. UPDATE with valid credentials - Happy Pass, expect 200
+PUT http://localhost:8081/api/notes/{{noteId}}
+Authorization: Basic admin admin123
+Content-Type: application/json
+Accept: application/json
+
+{
+  "title": "Secured note (edited)",
+  "content": "Updated with Basic auth"
+}
+
+> {%
+    client.test("UPDATE returns 200", function () {
+        client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    });
+%}
+
+### 5. DELETE with valid credentials - Happy Pass, expect 204
+DELETE http://localhost:8081/api/notes/{{noteId}}
+Authorization: Basic admin admin123
+
+> {%
+    client.test("DELETE returns 204", function () {
+        client.assert(response.status === 204, "Expected 204 but got " + response.status);
+    });
+%}
+
+### 6. READ deleted note with valid credentials - expect 404
+GET http://localhost:8081/api/notes/{{noteId}}
+Authorization: Basic admin admin123
+Accept: application/json
+
+> {%
+    client.test("READ deleted note returns 404", function () {
+        client.assert(response.status === 404, "Expected 404 but got " + response.status);
+    });
+%}
+
+### 7. READ ALL without credentials - Unhappy Pass, expect 401
+GET http://localhost:8081/api/notes
+Accept: application/json
+
+> {%
+    client.test("READ ALL without credentials returns 401", function () {
+        client.assert(response.status === 401, "Expected 401 but got " + response.status);
+    });
+%}
+
+### 8. CREATE without credentials - Unhappy Pass, expect 401
+POST http://localhost:8081/api/notes
+Content-Type: application/json
+Accept: application/json
+
+{
+  "title": "Should be rejected",
+  "content": "No Authorization header"
+}
+
+> {%
+    client.test("CREATE without credentials returns 401", function () {
+        client.assert(response.status === 401, "Expected 401 but got " + response.status);
+    });
+%}
+
+### 9. READ ALL with wrong password - Unhappy Pass, expect 401
+GET http://localhost:8081/api/notes
+Authorization: Basic admin wrongpass
+Accept: application/json
+
+> {%
+    client.test("READ ALL with wrong password returns 401", function () {
+        client.assert(response.status === 401, "Expected 401 but got " + response.status);
+    });
+%}
+
+### 10. DELETE without credentials - Unhappy Pass, expect 401
+DELETE http://localhost:8081/api/notes/1
+
+> {%
+    client.test("DELETE without credentials returns 401", function () {
+        client.assert(response.status === 401, "Expected 401 but got " + response.status);
+    });
+%}

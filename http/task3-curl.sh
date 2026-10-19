@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Same 10 requests as task3-basic-auth.http, runnable without the IntelliJ HTTP Client.
+# Same 10 requests as src/test/http/basic-authorization.http, runnable without the IntelliJ HTTP Client.
 # Start the app first: ./mvnw spring-boot:run   (port 8081)
 
 BASE=http://localhost:8081/api/notes

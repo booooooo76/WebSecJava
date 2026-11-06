@@ -1,0 +1,82 @@
+### 1. SHOW ALL - expect 200 and seeded notes
+GET http://localhost:8081/api/notes
+Authorization: Basic admin admin123
+Accept: application/json
+
+> {%
+    client.test("SHOW ALL returns 200", function () {
+        client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    });
+    client.test("SHOW ALL returns a non-empty list", function () {
+        client.assert(response.body.length > 0, "Expected at least one note");
+    });
+%}
+
+### 2. READ ONE - expect 200 and audit fields
+GET http://localhost:8081/api/notes/1
+Authorization: Basic admin admin123
+Accept: application/json
+
+> {%
+    client.test("READ ONE returns 200", function () {
+        client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    });
+    client.test("READ ONE has audit fields", function () {
+        client.assert(response.body.createdBy === "system", "Expected createdBy=system");
+        client.assert(response.body.createdAt != null, "Expected createdAt to be set");
+    });
+%}
+
+### 3. CREATE ONE - POST passes because CSRF is disabled, createdBy = admin
+POST http://localhost:8081/api/notes
+Authorization: Basic admin admin123
+Content-Type: application/json
+Accept: application/json
+
+{
+  "title": "Task 4 note",
+  "content": "Created with CSRF disabled"
+}
+
+> {%
+    client.test("CREATE ONE returns 201", function () {
+        client.assert(response.status === 201, "Expected 201 but got " + response.status);
+    });
+    client.test("CREATE ONE is audited", function () {
+        client.assert(response.body.createdBy === "admin", "Expected createdBy=admin");
+        client.assert(response.body.createdAt != null, "Expected createdAt to be set");
+    });
+    client.global.set("noteId", response.body.id);
+%}
+
+### 4. UPDATE ONE - updatedBy = admin
+PUT http://localhost:8081/api/notes/{{noteId}}
+Authorization: Basic admin admin123
+Content-Type: application/json
+Accept: application/json
+
+{
+  "title": "Task 4 note (edited)",
+  "content": "Updated with CSRF disabled"
+}
+
+> {%
+    client.test("UPDATE ONE returns 200", function () {
+        client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    });
+    client.test("UPDATE ONE is audited", function () {
+        client.assert(response.body.updatedBy === "admin", "Expected updatedBy=admin");
+        client.assert(response.body.updatedAt != null, "Expected updatedAt to be set");
+        client.assert(response.body.createdBy === "admin", "createdBy must not change");
+    });
+%}
+
+### 5. DELETE ONE - expect 204
+DELETE http://localhost:8081/api/notes/{{noteId}}
+Authorization: Basic admin admin123
+
+> {%
+    client.test("DELETE ONE returns 204", function () {
+        client.assert(response.status === 204, "Expected 204 but got " + response.status);
+    });
+%}

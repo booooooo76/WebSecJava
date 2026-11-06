@@ -1,0 +1,128 @@
+### Users:  user / user123 (USER: read)  |  manager / manager123 (MANAGER: read, create, update)  |  admin / admin123 (ADMIN: everything)
+
+### 1. USER reads all notes - expect 200
+GET http://localhost:8081/api/notes
+Authorization: Basic user user123
+Accept: application/json
+
+> {%
+    client.test("USER can read all", function () {
+        client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    });
+%}
+
+### 2. USER reads one note - expect 200
+GET http://localhost:8081/api/notes/1
+Authorization: Basic user user123
+Accept: application/json
+
+> {%
+    client.test("USER can read one", function () {
+        client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    });
+%}
+
+### 3. USER tries to create - expect 403
+POST http://localhost:8081/api/notes
+Authorization: Basic user user123
+Content-Type: application/json
+Accept: application/json
+
+{
+  "title": "Should be forbidden",
+  "content": "USER has no write access"
+}
+
+> {%
+    client.test("USER cannot create", function () {
+        client.assert(response.status === 403, "Expected 403 but got " + response.status);
+    });
+%}
+
+### 4. USER tries to delete - expect 403
+DELETE http://localhost:8081/api/notes/1
+Authorization: Basic user user123
+
+> {%
+    client.test("USER cannot delete", function () {
+        client.assert(response.status === 403, "Expected 403 but got " + response.status);
+    });
+%}
+
+### 5. MANAGER creates a note - expect 201
+POST http://localhost:8081/api/notes
+Authorization: Basic manager manager123
+Content-Type: application/json
+Accept: application/json
+
+{
+  "title": "Manager note",
+  "content": "Created by MANAGER"
+}
+
+> {%
+    client.test("MANAGER can create", function () {
+        client.assert(response.status === 201, "Expected 201 but got " + response.status);
+        client.assert(response.body.createdBy === "manager", "Expected createdBy=manager");
+    });
+    client.global.set("noteId", response.body.id);
+%}
+
+### 6. MANAGER updates the note - expect 200
+PUT http://localhost:8081/api/notes/{{noteId}}
+Authorization: Basic manager manager123
+Content-Type: application/json
+Accept: application/json
+
+{
+  "title": "Manager note (edited)",
+  "content": "Updated by MANAGER"
+}
+
+> {%
+    client.test("MANAGER can update", function () {
+        client.assert(response.status === 200, "Expected 200 but got " + response.status);
+        client.assert(response.body.updatedBy === "manager", "Expected updatedBy=manager");
+    });
+%}
+
+### 7. MANAGER tries to delete - expect 403
+DELETE http://localhost:8081/api/notes/{{noteId}}
+Authorization: Basic manager manager123
+
+> {%
+    client.test("MANAGER cannot delete", function () {
+        client.assert(response.status === 403, "Expected 403 but got " + response.status);
+    });
+%}
+
+### 8. ADMIN deletes the note - expect 204
+DELETE http://localhost:8081/api/notes/{{noteId}}
+Authorization: Basic admin admin123
+
+> {%
+    client.test("ADMIN can delete", function () {
+        client.assert(response.status === 204, "Expected 204 but got " + response.status);
+    });
+%}
+
+### 9. No credentials - expect 401
+GET http://localhost:8081/api/notes
+Accept: application/json
+
+> {%
+    client.test("Anonymous request is rejected", function () {
+        client.assert(response.status === 401, "Expected 401 but got " + response.status);
+    });
+%}
+
+### 10. Wrong password - expect 401
+GET http://localhost:8081/api/notes
+Authorization: Basic manager wrongpass
+Accept: application/json
+
+> {%
+    client.test("Wrong password is rejected", function () {
+        client.assert(response.status === 401, "Expected 401 but got " + response.status);
+    });
+%}

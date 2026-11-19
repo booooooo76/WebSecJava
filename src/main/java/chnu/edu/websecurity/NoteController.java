@@ -3,7 +3,10 @@ package chnu.edu.websecurity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import jakarta.annotation.security.RolesAllowed;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -37,12 +40,14 @@ public class NoteController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('USER', 'MANAGER', 'ADMIN')")
     public Collection<Note> getAll(Principal principal) {
         audit.info("user={} action=READ_ALL", principal.getName());
         return notes.values();
     }
 
     @GetMapping("/{id}")
+    @Secured({"ROLE_USER", "ROLE_MANAGER", "ROLE_ADMIN"})
     public ResponseEntity<Note> getById(@PathVariable Long id, Principal principal) {
         Note note = notes.get(id);
         audit.info("user={} action=READ id={} found={}", principal.getName(), id, note != null);
@@ -53,6 +58,7 @@ public class NoteController {
     }
 
     @PostMapping
+    @RolesAllowed({"MANAGER", "ADMIN"})
     public ResponseEntity<Note> create(@RequestBody Note request, Principal principal) {
         long id = idSequence.incrementAndGet();
         Note note = new Note(id, request.getTitle(), request.getContent());
@@ -64,6 +70,7 @@ public class NoteController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
     public ResponseEntity<Note> update(@PathVariable Long id, @RequestBody Note request, Principal principal) {
         Note existing = notes.get(id);
         audit.info("user={} action=UPDATE id={} found={}", principal.getName(), id, existing != null);
@@ -78,6 +85,7 @@ public class NoteController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long id, Principal principal) {
         Note removed = notes.remove(id);
         audit.info("user={} action=DELETE id={} found={}", principal.getName(), id, removed != null);

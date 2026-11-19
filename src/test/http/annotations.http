@@ -1,0 +1,135 @@
+### Routes protected by method annotations in NoteController:
+### GET all  @PreAuthorize("hasAnyRole('USER','MANAGER','ADMIN')") | GET one @Secured | POST @RolesAllowed({"MANAGER","ADMIN"})
+### PUT      @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")        | DELETE @PreAuthorize("hasRole('ADMIN')")
+
+### 1. USER - GET all (@PreAuthorize) - expect 200
+GET http://localhost:8081/api/notes
+Authorization: Basic user user123
+Accept: application/json
+
+> {%
+    client.test("USER reads all", function () {
+        client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    });
+%}
+
+### 2. MANAGER - GET one (@Secured) - expect 200
+GET http://localhost:8081/api/notes/1
+Authorization: Basic manager manager123
+Accept: application/json
+
+> {%
+    client.test("MANAGER reads one", function () {
+        client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    });
+%}
+
+### 3. ADMIN - GET all (@PreAuthorize) - expect 200
+GET http://localhost:8081/api/notes
+Authorization: Basic admin admin123
+Accept: application/json
+
+> {%
+    client.test("ADMIN reads all", function () {
+        client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    });
+%}
+
+### 4. USER - POST (@RolesAllowed) - expect 403
+POST http://localhost:8081/api/notes
+Authorization: Basic user user123
+Content-Type: application/json
+Accept: application/json
+
+{
+  "title": "Forbidden",
+  "content": "USER is not in @RolesAllowed"
+}
+
+> {%
+    client.test("USER cannot create", function () {
+        client.assert(response.status === 403, "Expected 403 but got " + response.status);
+    });
+%}
+
+### 5. MANAGER - POST (@RolesAllowed) - expect 201
+POST http://localhost:8081/api/notes
+Authorization: Basic manager manager123
+Content-Type: application/json
+Accept: application/json
+
+{
+  "title": "Annotated route note",
+  "content": "Created by MANAGER"
+}
+
+> {%
+    client.test("MANAGER creates", function () {
+        client.assert(response.status === 201, "Expected 201 but got " + response.status);
+    });
+    client.global.set("noteId", response.body.id);
+%}
+
+### 6. USER - PUT (@PreAuthorize) - expect 403
+PUT http://localhost:8081/api/notes/{{noteId}}
+Authorization: Basic user user123
+Content-Type: application/json
+Accept: application/json
+
+{
+  "title": "Forbidden edit",
+  "content": "USER cannot update"
+}
+
+> {%
+    client.test("USER cannot update", function () {
+        client.assert(response.status === 403, "Expected 403 but got " + response.status);
+    });
+%}
+
+### 7. MANAGER - PUT (@PreAuthorize) - expect 200
+PUT http://localhost:8081/api/notes/{{noteId}}
+Authorization: Basic manager manager123
+Content-Type: application/json
+Accept: application/json
+
+{
+  "title": "Annotated route note (edited)",
+  "content": "Updated by MANAGER"
+}
+
+> {%
+    client.test("MANAGER updates", function () {
+        client.assert(response.status === 200, "Expected 200 but got " + response.status);
+    });
+%}
+
+### 8. MANAGER - DELETE (@PreAuthorize ADMIN only) - expect 403
+DELETE http://localhost:8081/api/notes/{{noteId}}
+Authorization: Basic manager manager123
+
+> {%
+    client.test("MANAGER cannot delete", function () {
+        client.assert(response.status === 403, "Expected 403 but got " + response.status);
+    });
+%}
+
+### 9. ADMIN - DELETE (@PreAuthorize ADMIN only) - expect 204
+DELETE http://localhost:8081/api/notes/{{noteId}}
+Authorization: Basic admin admin123
+
+> {%
+    client.test("ADMIN deletes", function () {
+        client.assert(response.status === 204, "Expected 204 but got " + response.status);
+    });
+%}
+
+### 10. USER - DELETE (@PreAuthorize ADMIN only) - expect 403
+DELETE http://localhost:8081/api/notes/1
+Authorization: Basic user user123
+
+> {%
+    client.test("USER cannot delete", function () {
+        client.assert(response.status === 403, "Expected 403 but got " + response.status);
+    });
+%}

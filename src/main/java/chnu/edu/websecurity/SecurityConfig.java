@@ -2,7 +2,7 @@ package chnu.edu.websecurity;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -16,6 +16,7 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 public class SecurityConfig {
 
     @Bean
@@ -26,11 +27,8 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.GET, "/api/notes/**").hasAnyRole("USER", "MANAGER", "ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/notes/**").hasAnyRole("MANAGER", "ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/notes/**").hasAnyRole("MANAGER", "ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/notes/**").hasRole("ADMIN")
-                        .requestMatchers("/api/notes/**").denyAll()
+                        // Role checks per route live on NoteController methods (method security annotations).
+                        .requestMatchers("/api/notes/**").authenticated()
                         .anyRequest().permitAll())
                 .httpBasic(Customizer.withDefaults());
         return http.build();
